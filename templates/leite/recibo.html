@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load formatos %}
+{% comment %}
+  Emissão de recibo: escolhe produtor + período, vê a prévia e então
+  imprime, baixa o PDF ou envia o resumo pelo WhatsApp.
+{% endcomment %}
+{% block titulo %}Emitir recibo{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-receipt"></i> Emissão de recibo por produtor{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Recibo</li>{% endblock %}
+
+{% block conteudo %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end" novalidate>
+      <div class="col-md-4">
+        <label class="form-label" for="produtor">Produtor</label>
+        <select name="produtor" id="produtor" class="form-select" required>
+          <option value="">Escolha...</option>
+          {% for p in produtores %}<option value="{{ p.pk }}" {% if produtor and p.pk == produtor.pk %}selected{% endif %}>{{ p.nome }}{% if not p.ativo %} (inativo){% endif %}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-3">{% include "partials/_campo.html" with campo=form.inicio %}</div>
+      <div class="col-6 col-md-3">{% include "partials/_campo.html" with campo=form.fim %}</div>
+      <div class="col-md-2 mb-3 d-grid"><button class="btn btn-leite"><i class="bi bi-eye me-1"></i>Ver prévia</button></div>
+      {% if form.non_field_errors %}<div class="col-12"><div class="alert alert-danger mb-0">{{ form.non_field_errors|join:" " }}</div></div>{% endif %}
+    </form>
+  </div>
+</div>
+
+{% if produtor and resumo %}
+  {% if resumo.coletas %}
+  <div class="card">
+    <div class="card-header d-flex flex-wrap gap-2 align-items-center">
+      <h3 class="card-title me-auto">Prévia · {{ produtor.nome }} · {{ inicio|date:"d/m/Y" }} a {{ fim|date:"d/m/Y" }} ({{ resumo.coletas|length }} registros)</h3>
+      <a href="{% url 'leite:recibo_imprimir' %}?{{ parametros }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>Imprimir</a>
+      <a href="{% url 'leite:recibo_pdf' %}?{{ parametros }}" class="btn btn-sm btn-leite"><i class="bi bi-file-earmark-pdf me-1"></i>Baixar PDF</a>
+      {% if link_whatsapp %}<a href="{{ link_whatsapp }}" target="_blank" rel="noopener" class="btn btn-sm btn-success"><i class="bi bi-whatsapp me-1"></i>WhatsApp</a>{% endif %}
+    </div>
+    {% if resumo.faltas %}<div class="alert alert-warning m-3 mb-0"><i class="bi bi-exclamation-triangle me-1"></i>{{ resumo.faltas }} dia(s) com falta / 0 litros no período.</div>{% endif %}
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead><tr><th>Data da entrega</th><th class="text-end">Quantidade</th><th class="text-end">Preço p/ litro</th><th class="text-end">Total</th><th>Situação</th></tr></thead>
+        <tbody>
+          {% for c in resumo.coletas %}
+            <tr class="{% if c.falta %}linha-falta{% endif %}">
+              <td>{{ c.data|date:"d/m/Y" }}</td><td class="text-end">{{ c.litros|litros }}</td><td class="text-end">{{ c.preco_litro|moeda }}</td>
+              <td class="text-end">{{ c.valor_total|moeda }}</td>
+              <td>{% if c.falta %}<span class="badge text-bg-danger">Falta (0 L)</span>{% else %}<span class="badge text-bg-success">Entregue</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="fw-bold"><tr><td>TOTAL</td><td class="text-end">{{ resumo.total_litros|litros }}</td><td></td><td class="text-end">{{ resumo.total_valor|moeda }}</td><td></td></tr></tfoot>
+      </table>
+    </div>
+    <div class="card-footer small text-body-secondary">
+      Média: {{ resumo.media_litros|litros }} por dia lançado · {{ resumo.dias_entregues }} dia(s) com entrega
+      {% if resumo.total_pago %} · Pagamentos feitos dentro deste período: <strong>{{ resumo.total_pago|moeda }}</strong>{% endif %}
+    </div>
+  </div>
+  {% elif fora_do_periodo.quantidade %}
+    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-1"></i>
+      Não há lançamentos para <strong>{{ produtor.nome }}</strong> entre {{ inicio|date:"d/m/Y" }} e {{ fim|date:"d/m/Y" }}.
+      Porém existem <strong>{{ fora_do_periodo.quantidade }}</strong> lançamento(s) entre <strong>{{ fora_do_periodo.primeira|date:"d/m/Y" }}</strong> e <strong>{{ fora_do_periodo.ultima|date:"d/m/Y" }}</strong>. Ajuste o período.</div>
+  {% else %}
+    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-1"></i>Nenhuma entrega de leite foi lançada para <strong>{{ produtor.nome }}</strong> ainda.</div>
+  {% endif %}
+{% elif not produtor %}
+  <div class="alert alert-info"><i class="bi bi-info-circle me-1"></i>Escolha o produtor e o período para gerar o recibo.</div>
+{% endif %}
+{% endblock %}

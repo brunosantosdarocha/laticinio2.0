@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load formatos %}
+{% comment %} Confirmação do estorno de pagamento (com motivo obrigatório). {% endcomment %}
+{% block titulo %}Estornar pagamento{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-arrow-counterclockwise"></i> Estornar pagamento{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'leite:pagamentos' %}">Pagamentos</a></li><li class="breadcrumb-item active">Estornar</li>{% endblock %}
+{% block conteudo %}
+<div class="row"><div class="col-lg-6">
+  <div class="card card-outline card-danger">
+    <div class="card-header"><h3 class="card-title">{{ pagamento.produtor.nome }} · {{ pagamento.valor|moeda }} em {{ pagamento.data|date:"d/m/Y" }}</h3></div>
+    {% if pagamento.estornado %}
+      <div class="card-body"><div class="alert alert-secondary mb-0">Este pagamento já foi estornado: {{ pagamento.motivo_estorno }}</div></div>
+    {% else %}
+    <form method="post" data-confirmar="Confirma o estorno deste pagamento?">
+      {% csrf_token %}
+      <div class="card-body">
+        <p>O pagamento continuará no histórico (riscado), mas deixará de contar no saldo do produtor. A saída correspondente no caixa também será estornada.</p>
+        {% include "partials/_form_campos.html" with form=form %}
+      </div>
+      <div class="card-footer d-flex gap-2"><button class="btn btn-danger">Estornar</button><a href="{% url 'leite:pagamentos' %}" class="btn btn-outline-secondary">Voltar</a></div>
+    </form>
+    {% endif %}
+  </div>
+</div></div>
+{% endblock %}

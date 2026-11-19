@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% comment %}
+  Backup: configuração do e-mail/horário (senha criptografada), enviar agora, baixar e histórico.
+{% endcomment %}
+{% block titulo %}Backup{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-cloud-arrow-up"></i> Backup{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Backup</li>{% endblock %}
+{% block conteudo %}
+<div class="d-flex flex-wrap gap-2 mb-3">
+  <form method="post" action="{% url 'backup:enviar' %}">{% csrf_token %}<button class="btn btn-leite" {% if not config.smtp_configurado or not config.email_destino %}disabled title="Configure o e-mail primeiro"{% endif %}><i class="bi bi-envelope-arrow-up me-1"></i>Enviar backup agora</button></form>
+  <form method="post" action="{% url 'backup:baixar_novo' %}">{% csrf_token %}<button class="btn btn-outline-success"><i class="bi bi-download me-1"></i>Baixar backup agora</button></form>
+</div>
+
+<div class="row">
+  <div class="col-xl-7">
+    <div class="card card-outline card-success mb-3">
+      <div class="card-header"><h3 class="card-title">Configuração</h3></div>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="card-body">
+          {% include "partials/_form_campos.html" with form=form %}
+          <p class="small mb-0">{% if config.smtp_senha_cifrada %}<i class="bi bi-lock-fill text-success"></i> Senha do e-mail salva (criptografada).{% else %}<i class="bi bi-unlock text-warning"></i> Nenhuma senha de e-mail salva.{% endif %}
+            {% if config.ultimo_backup_auto %} · Último automático: {{ config.ultimo_backup_auto|date:"d/m/Y H:i" }}{% endif %}</p>
+        </div>
+        <div class="card-footer"><button class="btn btn-leite"><i class="bi bi-check-lg me-1"></i>Salvar configuração</button></div>
+      </form>
+    </div>
+  </div>
+  <div class="col-xl-5">
+    <div class="callout callout-info mb-3">
+      <h5><i class="bi bi-google me-1"></i>Usando Gmail? Crie uma "senha de app"</h5>
+      <ol class="small mb-0 ps-3">
+        <li>Ative a verificação em duas etapas na sua conta Google.</li>
+        <li>Acesse <strong>myaccount.google.com/apppasswords</strong>.</li>
+        <li>Crie uma senha com o nome "Laticínio" e copie os 16 caracteres.</li>
+        <li>Cole no campo "Senha do e-mail" aqui. Servidor <code>smtp.gmail.com</code>, porta <code>587</code>, TLS ligado.</li>
+      </ol>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header"><h3 class="card-title">Arquivos guardados (últimos 10)</h3></div>
+      <ul class="list-group list-group-flush">
+        {% for a in arquivos %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span class="small font-monospace">{{ a.nome }}</span>
+            <span><small class="text-body-secondary me-2">{{ a.tamanho|filesizeformat }}</small>
+              <a href="{% url 'backup:baixar_arquivo' a.nome %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i></a></span>
+          </li>
+        {% empty %}<li class="list-group-item text-body-secondary">Nenhum backup ainda.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Histórico</h3></div>
+  <div class="card-body p-0 table-responsive">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>Data</th><th>Origem</th><th>Arquivo</th><th>Resultado</th></tr></thead>
+      <tbody>
+        {% for r in historico %}
+          <tr><td class="nowrap">{{ r.criado_em|date:"d/m/Y H:i" }}</td><td class="small">{{ r.get_origem_display }}</td><td class="small font-monospace">{{ r.arquivo|default:"—" }}</td>
+            <td class="small">{% if r.sucesso %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %} {{ r.mensagem }}</td></tr>
+        {% empty %}<tr><td colspan="4" class="text-center text-body-secondary py-3">Nenhum backup feito ainda.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

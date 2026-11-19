@@ -1,0 +1,32 @@
+{% load static %}<!doctype html>
+{% comment %} Tela de login (sem menu). Após 5 senhas erradas o usuário é bloqueado por 15 minutos. {% endcomment %}
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar | {{ nome_empresa }}</title>
+  <link rel="stylesheet" href="{% static 'vendor/adminlte/adminlte.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/sistema.css' %}">
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+</head>
+<body class="login-page-laticinio d-flex align-items-center justify-content-center p-3">
+  <div class="card shadow-lg w-100" style="max-width: 400px">
+    <div class="card-header text-center border-0 pt-4">
+      <img src="{% static 'img/logo-laticinio.svg' %}" alt="Balde de leite e queijo" style="height: 80px; width: auto">
+      <h1 class="h4 fw-bold mb-0 mt-2 titulo-login">{{ nome_empresa }}</h1>
+      <small class="text-body-secondary">Sistema de leite e financeiro</small>
+    </div>
+    <div class="card-body">
+      {% include "partials/_mensagens.html" %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="alert alert-danger py-2">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>{% endif %}
+        {% include "partials/_campo.html" with campo=form.username %}
+        {% include "partials/_campo.html" with campo=form.password %}
+        <button type="submit" class="btn btn-leite w-100 py-2"><i class="bi bi-box-arrow-in-right me-1"></i>Entrar</button>
+      </form>
+    </div>
+    <div class="card-footer text-center small text-body-secondary">Esqueceu a senha? Fale com o administrador.</div>
+  </div>
+</body>
+</html>

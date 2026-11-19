@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% comment %} Correção de um lançamento de leite (litros, preço e forma). {% endcomment %}
+{% block titulo %}Corrigir lançamento{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-pencil-square"></i> Corrigir lançamento{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="{{ voltar }}">Calendário</a></li><li class="breadcrumb-item active">Corrigir</li>{% endblock %}
+{% block conteudo %}
+<div class="row"><div class="col-lg-7">
+  <div class="alert alert-light border"><strong>{{ coleta.produtor.nome }}</strong> · {{ coleta.data|date:"l, d/m/Y" }}
+    {% if coleta.usuario %}<br><small class="text-body-secondary">Último lançamento por {{ coleta.usuario.get_full_name|default:coleta.usuario.username }} em {{ coleta.atualizado_em|date:"d/m/Y H:i" }}</small>{% endif %}</div>
+  {% include "partials/_form_card.html" with form=form titulo="Lançamento" voltar=voltar %}
+</div></div>
+{% endblock %}

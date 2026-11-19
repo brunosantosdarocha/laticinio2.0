@@ -1,0 +1,8 @@
+{% comment %} Mensagens de sucesso/erro/aviso geradas pelas views (messages.success, messages.error...). {% endcomment %}
+{% for mensagem in messages %}
+  <div class="alert alert-{% if mensagem.tags == 'error' %}danger{% else %}{{ mensagem.tags }}{% endif %} alert-dismissible fade show" role="alert">
+    {% if mensagem.tags == 'success' %}<i class="bi bi-check-circle-fill me-1"></i>{% elif mensagem.tags == 'error' %}<i class="bi bi-x-octagon-fill me-1"></i>{% elif mensagem.tags == 'warning' %}<i class="bi bi-exclamation-triangle-fill me-1"></i>{% else %}<i class="bi bi-info-circle-fill me-1"></i>{% endif %}
+    {{ mensagem }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+  </div>
+{% endfor %}

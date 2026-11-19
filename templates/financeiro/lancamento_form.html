@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load formatos %}
+{% comment %} Cadastro de entrada ou saída do caixa (substitui as telas "Entradas" e "Saidas" do Streamlit). {% endcomment %}
+{% block titulo %}{% if eh_entrada %}Nova entrada{% else %}Nova saída{% endif %}{% endblock %}
+{% block titulo_pagina %}{% if eh_entrada %}<i class="bi bi-box-arrow-in-down text-success"></i> Cadastro de entrada{% else %}<i class="bi bi-box-arrow-up text-danger"></i> Cadastro de saída{% endif %}{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'financeiro:extrato' %}">Financeiro</a></li><li class="breadcrumb-item active">{% if eh_entrada %}Entrada{% else %}Saída{% endif %}</li>{% endblock %}
+{% block conteudo %}
+<div class="row">
+  <div class="col-lg-7">
+    <div class="card card-outline {% if eh_entrada %}card-success{% else %}card-danger{% endif %}">
+      <div class="card-header"><h3 class="card-title">{% if eh_entrada %}Dados da entrada{% else %}Dados da saída{% endif %}</h3></div>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="card-body">{% include "partials/_form_campos.html" with form=form %}</div>
+        <div class="card-footer d-flex flex-wrap gap-2">
+          <button type="submit" class="btn {% if eh_entrada %}btn-success{% else %}btn-danger{% endif %}"><i class="bi bi-check-lg me-1"></i>Salvar</button>
+          <button type="submit" name="salvar_e_novo" value="1" class="btn btn-outline-secondary">Salvar e lançar outra</button>
+          {% if perms.financeiro.add_categoria %}<a href="{% url 'financeiro:categoria_criar' %}" class="btn btn-link ms-auto">Nova categoria</a>{% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Últimos lançamentos</h3></div>
+      <ul class="list-group list-group-flush">
+        {% for l in ultimos %}
+          <li class="list-group-item d-flex justify-content-between {% if l.estornado %}text-decoration-line-through opacity-50{% endif %}">
+            <span><small class="text-body-secondary">{{ l.data|date:"d/m" }}</small> {{ l.categoria.nome }}</span><strong>{{ l.valor|moeda }}</strong>
+          </li>
+        {% empty %}<li class="list-group-item text-body-secondary">Nenhum lançamento ainda.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

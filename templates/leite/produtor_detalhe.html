@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% load formatos %}
+{% comment %} Ficha do produtor: dados, saldo a receber, leite do mês, últimas entregas e pagamentos. {% endcomment %}
+{% block titulo %}{{ produtor.nome }}{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-person-vcard"></i> {{ produtor.nome }} {% if not produtor.ativo %}<span class="badge text-bg-secondary fs-6">Inativo</span>{% endif %}{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'leite:produtores' %}">Produtores</a></li><li class="breadcrumb-item active">Ficha</li>{% endblock %}
+
+{% block conteudo %}
+<div class="d-flex flex-wrap gap-2 mb-3">
+  {% if perms.leite.view_coleta %}<a href="{% url 'leite:calendario' %}?produtor={{ produtor.pk }}" class="btn btn-leite"><i class="bi bi-calendar3 me-1"></i>Calendário</a>{% endif %}
+  {% if perms.leite.emitir_recibo %}<a href="{% url 'leite:recibo' %}?produtor={{ produtor.pk }}" class="btn btn-outline-success"><i class="bi bi-receipt me-1"></i>Recibo</a>{% endif %}
+  {% if perms.leite.add_pagamentoprodutor %}<a href="{% url 'leite:pagamento_novo' produtor.pk %}" class="btn btn-primary"><i class="bi bi-cash-coin me-1"></i>Registrar pagamento</a>{% endif %}
+  {% if perms.leite.change_produtor %}<a href="{% url 'leite:produtor_editar' produtor.pk %}" class="btn btn-outline-primary"><i class="bi bi-pencil me-1"></i>Editar / renomear</a>{% endif %}
+</div>
+
+<div class="row">
+  <div class="col-lg-3 col-6"><div class="small-box text-bg-success">
+    <div class="inner"><h3>{{ resumo_mes.total_litros|litros }}</h3><p>Leite neste mês</p></div><i class="small-box-icon bi bi-droplet-half"></i></div></div>
+  <div class="col-lg-3 col-6"><div class="small-box text-bg-primary">
+    <div class="inner"><h3>{{ resumo_mes.total_valor|moeda }}</h3><p>Valor do leite no mês</p></div><i class="small-box-icon bi bi-currency-dollar"></i></div></div>
+  <div class="col-lg-3 col-6"><div class="small-box text-bg-warning">
+    <div class="inner"><h3>{{ saldo.saldo|default:0|moeda }}</h3><p>Saldo a receber (geral)</p></div><i class="small-box-icon bi bi-wallet2"></i></div></div>
+  <div class="col-lg-3 col-6"><div class="small-box text-bg-danger">
+    <div class="inner"><h3>{{ resumo_mes.faltas }}</h3><p>Faltas no mês</p></div><i class="small-box-icon bi bi-calendar-x"></i></div></div>
+</div>
+
+<div class="row">
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-header"><h3 class="card-title">Dados</h3></div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item"><small class="text-body-secondary d-block">Propriedade</small>{{ produtor.apelido_propriedade|default:"—" }}</li>
+        <li class="list-group-item"><small class="text-body-secondary d-block">CPF</small>{{ produtor.cpf|default:"—" }}</li>
+        <li class="list-group-item"><small class="text-body-secondary d-block">Telefone</small>{{ produtor.telefone|default:"—" }}</li>
+        <li class="list-group-item"><small class="text-body-secondary d-block">Chave Pix</small>{{ produtor.chave_pix|default:"—" }}</li>
+        <li class="list-group-item"><small class="text-body-secondary d-block">Preço atual do litro</small>{{ produtor.preco_litro|moeda }}</li>
+        {% if produtor.observacao %}<li class="list-group-item"><small class="text-body-secondary d-block">Observações</small>{{ produtor.observacao|linebreaksbr }}</li>{% endif %}
+      </ul>
+      {% if saldo %}
+      <div class="card-footer small">
+        Total do leite: <strong>{{ saldo.valor|moeda }}</strong> · Pago: <strong>{{ saldo.pago|moeda }}</strong>
+      </div>
+      {% endif %}
+    </div>
+    {% if perms.leite.delete_produtor %}
+    <div class="card card-outline card-danger collapsed-card">
+      <div class="card-header"><h3 class="card-title text-danger"><i class="bi bi-trash me-1"></i>Apagar produtor</h3>
+        <div class="card-tools"><button type="button" class="btn btn-tool" data-lte-toggle="card-collapse"><i data-lte-icon="expand" class="bi bi-plus-lg"></i><i data-lte-icon="collapse" class="bi bi-dash-lg"></i></button></div></div>
+      <div class="card-body">
+        <p class="small">Apaga <strong>{{ produtor.nome }}</strong> e <strong>todo</strong> o histórico de leite dele. Não é possível se houver pagamentos — nesse caso, marque como inativo.</p>
+        <form method="post" action="{% url 'leite:produtor_excluir' produtor.pk %}" data-confirmar="Esta ação é IRREVERSÍVEL. Apagar {{ produtor.nome }} e todo o histórico?">
+          {% csrf_token %}<button class="btn btn-danger btn-sm">Apagar definitivamente</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-header"><h3 class="card-title">Últimas entregas</h3></div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Data</th><th class="text-end">Litros</th><th class="text-end">Preço</th><th class="text-end">Total</th><th>Forma</th></tr></thead>
+          <tbody>
+          {% for c in ultimas_coletas %}
+            <tr class="{% if c.falta %}linha-falta{% endif %}"><td>{{ c.data|date:"d/m/Y" }}</td><td class="text-end">{% if c.falta %}Falta{% else %}{{ c.litros|litros }}{% endif %}</td>
+              <td class="text-end">{{ c.preco_litro|moeda }}</td><td class="text-end">{{ c.valor_total|moeda }}</td><td class="small">{{ c.get_forma_display }}</td></tr>
+          {% empty %}<tr><td colspan="5" class="text-center text-body-secondary py-3">Sem entregas.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Pagamentos</h3></div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Data</th><th>Período</th><th>Forma</th><th class="text-end">Valor</th></tr></thead>
+          <tbody>
+          {% for p in pagamentos %}
+            <tr class="{% if p.estornado %}linha-estornada{% endif %}"><td>{{ p.data|date:"d/m/Y" }}</td>
+              <td class="small">{% if p.periodo_inicio %}{{ p.periodo_inicio|date:"d/m" }} a {{ p.periodo_fim|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+              <td class="small">{{ p.get_forma_pagamento_display }}{% if p.estornado %} <span class="badge text-bg-secondary">estornado</span>{% endif %}</td>
+              <td class="text-end">{{ p.valor|moeda }}</td></tr>
+          {% empty %}<tr><td colspan="4" class="text-center text-body-secondary py-3">Nenhum pagamento registrado.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

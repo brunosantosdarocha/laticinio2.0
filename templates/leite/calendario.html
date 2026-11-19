@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% load formatos l10n %}
+{% comment %}
+  Calendário mensal do leite (escritório).
+  Cada dia tem: caixa "Falta" + campo de litros. Tudo é salvo de uma vez no botão "Salvar calendário".
+  Campo vazio = sem lançamento (se havia, é removido). Falta = 0 litros (aparece no recibo em vermelho).
+  {% localize off %} garante que os números saiam com ponto (2.5) nos campos numéricos.
+{% endcomment %}
+{% block titulo %}Calendário do leite{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-calendar3"></i> Calendário do leite{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Calendário</li>{% endblock %}
+
+{% block conteudo %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label" for="produtor">Produtor</label>
+        <select name="produtor" id="produtor" class="form-select">
+          <option value="">Escolha o produtor...</option>
+          {% for p in produtores %}
+            <option value="{{ p.pk }}" {% if produtor and p.pk == produtor.pk %}selected{% endif %}>{{ p.nome }}{% if not p.ativo %} (inativo){% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label" for="mes">Mês</label>
+        <select name="mes" id="mes" class="form-select">
+          {% for numero, nome_m in meses %}<option value="{{ numero }}" {% if numero == mes %}selected{% endif %}>{{ nome_m }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label" for="ano">Ano</label>
+        <input type="number" name="ano" id="ano" class="form-control" value="{{ ano|unlocalize }}" min="2000" max="2100">
+      </div>
+      <div class="col-md-2 d-grid"><button class="btn btn-leite"><i class="bi bi-search me-1"></i>Abrir</button></div>
+    </form>
+  </div>
+</div>
+
+{% if not produtor %}
+  <div class="alert alert-info"><i class="bi bi-info-circle me-1"></i>Escolha um produtor para abrir o calendário do mês.</div>
+{% else %}
+<div class="row">
+  <div class="col-sm-4 col-6">
+    <div class="info-box"><span class="info-box-icon text-bg-success shadow-sm"><i class="bi bi-droplet-half"></i></span>
+      <div class="info-box-content"><span class="info-box-text">Litros no mês</span><span class="info-box-number">{{ total_litros|litros }}</span></div></div>
+  </div>
+  <div class="col-sm-4 col-6">
+    <div class="info-box"><span class="info-box-icon text-bg-primary shadow-sm"><i class="bi bi-currency-dollar"></i></span>
+      <div class="info-box-content"><span class="info-box-text">Valor do leite</span><span class="info-box-number">{{ total_valor|moeda }}</span></div></div>
+  </div>
+  <div class="col-sm-4 col-12">
+    <div class="info-box"><span class="info-box-icon text-bg-danger shadow-sm"><i class="bi bi-calendar-x"></i></span>
+      <div class="info-box-content"><span class="info-box-text">Faltas</span><span class="info-box-number">{{ faltas }} dia{{ faltas|pluralize }}</span></div></div>
+  </div>
+</div>
+
+<form method="post" action="?produtor={{ produtor.pk }}&mes={{ mes }}&ano={{ ano|unlocalize }}">
+  {% csrf_token %}
+  <div class="card mb-3">
+    <div class="cal-titulo-mes d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <a class="btn btn-sm btn-light" href="?produtor={{ produtor.pk }}&mes={{ anterior.month }}&ano={{ anterior.year|unlocalize }}" title="Mês anterior"><i class="bi bi-chevron-left"></i></a>
+      <span><i class="bi bi-calendar-heart me-1"></i>{{ nome_mes }} de {{ ano|unlocalize }} · {{ produtor.nome }}</span>
+      <a class="btn btn-sm btn-light" href="?produtor={{ produtor.pk }}&mes={{ proximo.month }}&ano={{ proximo.year|unlocalize }}" title="Próximo mês"><i class="bi bi-chevron-right"></i></a>
+    </div>
+    <div class="card-body">
+      <div class="row g-2 align-items-end mb-3">
+        <div class="col-sm-5 col-md-4">
+          <label class="form-label" for="preco_padrao">Preço por litro para os dias NOVOS (R$)</label>
+          <input type="number" step="0.01" min="0" name="preco_padrao" id="preco_padrao" class="form-control" value="{{ produtor.preco_litro|unlocalize }}">
+        </div>
+        <div class="col-sm-7 col-md-8 small text-body-secondary">
+          Dias já lançados mantêm o preço que tinham. Para mudar o preço de vários dias use "Alterar preço em massa".
+        </div>
+      </div>
+
+      <div class="cal-grade mb-1">
+        {% for nome_dia in dias_semana %}<div class="cal-semana {% if forloop.counter > 5 %}fds{% endif %}">{{ nome_dia|slice:":3" }}</div>{% endfor %}
+      </div>
+      {% localize off %}
+      {% for semana in semanas %}
+        <div class="cal-grade mb-1">
+          {% for c in semana %}
+            {% if c.dia %}
+              <div class="cal-dia {% if c.fim_de_semana %}fds{% endif %} {% if c.hoje %}hoje{% endif %} {% if c.coleta.falta %}tem-falta{% endif %}">
+                <div class="d-flex justify-content-between align-items-start">
+                  <span class="cal-num">{{ c.dia }}</span>
+                  {% if c.coleta and c.coleta.forma != "ESCRITORIO" %}<i class="bi {% if c.coleta.forma == 'COLETADO' %}bi-truck{% else %}bi-house-door{% endif %} small text-body-secondary" title="{{ c.coleta.get_forma_display }}"></i>{% endif %}
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="falta_{{ c.dia }}" id="falta_{{ c.dia }}" value="1" data-falta="dia_{{ c.dia }}" {% if c.coleta.falta %}checked{% endif %}>
+                  <label class="form-check-label" for="falta_{{ c.dia }}">Falta</label>
+                </div>
+                <input type="number" step="0.1" min="0" inputmode="decimal" class="form-control form-control-sm" name="dia_{{ c.dia }}" id="dia_{{ c.dia }}"
+                       value="{% if c.coleta and not c.coleta.falta %}{{ c.coleta.litros }}{% endif %}" aria-label="Litros do dia {{ c.dia }}">
+              </div>
+            {% else %}
+              <div class="cal-dia vazio"></div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+      {% endlocalize %}
+    </div>
+    {% if perms.leite.add_coleta and perms.leite.change_coleta %}
+    <div class="card-footer d-flex flex-wrap gap-2">
+      <button type="submit" class="btn btn-leite"><i class="bi bi-save me-1"></i>Salvar calendário</button>
+      <span class="small text-body-secondary align-self-center">Campo vazio = sem lançamento. Marque "Falta" para registrar 0 litros.</span>
+    </div>
+    {% endif %}
+  </div>
+</form>
+
+{% if perms.leite.alterar_preco_massa %}
+<div class="card card-outline card-warning collapsed-card mb-3">
+  <div class="card-header">
+    <h3 class="card-title"><i class="bi bi-currency-exchange me-1"></i>Alterar o preço de várias entregas de uma vez (em massa)</h3>
+    <div class="card-tools"><button type="button" class="btn btn-tool" data-lte-toggle="card-collapse"><i data-lte-icon="expand" class="bi bi-plus-lg"></i><i data-lte-icon="collapse" class="bi bi-dash-lg"></i></button></div>
+  </div>
+  <div class="card-body">
+    <form method="post" action="{% url 'leite:preco_massa' %}" data-confirmar="Confirma a alteração de preço em massa?">
+      {% csrf_token %}
+      <input type="hidden" name="produtor" value="{{ produtor.pk }}">
+      <input type="hidden" name="mes" value="{{ mes }}">
+      <input type="hidden" name="ano" value="{{ ano|unlocalize }}">
+      {% include "partials/_form_campos.html" with form=form_massa %}
+      <p class="small text-body-secondary">Sem "todos os produtores", altera só <strong>{{ produtor.nome }}</strong>. Sem o filtro de preço, altera todos os registros do período.</p>
+      <button class="btn btn-warning"><i class="bi bi-lightning-charge me-1"></i>Aplicar novo preço em massa</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header"><h3 class="card-title"><i class="bi bi-list-check me-1"></i>Histórico de {{ nome_mes }} - {{ produtor.nome }}</h3></div>
+  <div class="card-body p-0 table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead><tr><th>Data</th><th class="text-end">Litros</th><th class="text-end">Preço/L</th><th class="text-end">Total</th><th>Situação</th><th>Forma</th><th class="text-end">Ações</th></tr></thead>
+      <tbody>
+        {% for coleta in historico %}
+          <tr class="{% if coleta.falta %}linha-falta{% endif %}">
+            <td class="nowrap">{{ coleta.data|date:"d/m/Y" }} <small class="text-body-secondary">{{ coleta.data|date:"D" }}</small></td>
+            <td class="text-end">{{ coleta.litros|litros }}</td>
+            <td class="text-end">{{ coleta.preco_litro|moeda }}</td>
+            <td class="text-end">{{ coleta.valor_total|moeda }}</td>
+            <td>{% if coleta.falta %}<span class="badge text-bg-danger">Falta (0 L)</span>{% else %}<span class="badge text-bg-success">Entregue</span>{% endif %}</td>
+            <td class="small">{{ coleta.get_forma_display }}</td>
+            <td class="text-end nowrap">
+              {% if perms.leite.change_coleta %}<a href="{% url 'leite:coleta_editar' coleta.pk %}" class="btn btn-sm btn-outline-primary" title="Corrigir"><i class="bi bi-pencil"></i></a>{% endif %}
+              {% if perms.leite.delete_coleta %}
+              <form method="post" action="{% url 'leite:coleta_excluir' coleta.pk %}" class="d-inline" data-confirmar="Remover o lançamento de {{ coleta.data|date:'d/m/Y' }}?">
+                {% csrf_token %}<button class="btn btn-sm btn-outline-danger" title="Remover"><i class="bi bi-trash"></i></button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-center text-body-secondary py-3">Nenhum lançamento neste mês.</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if historico %}
+      <tfoot><tr class="fw-bold"><td>Total</td><td class="text-end">{{ total_litros|litros }}</td><td></td><td class="text-end">{{ total_valor|moeda }}</td><td colspan="3"></td></tr></tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

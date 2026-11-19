@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% comment %} Dados do laticínio (aparecem no recibo). {% endcomment %}
+{% block titulo %}Dados do laticínio{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-building"></i> Dados do laticínio{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Dados do laticínio</li>{% endblock %}
+{% block conteudo %}
+<div class="row"><div class="col-lg-8">
+  {% if pode_editar %}
+    {% include "partials/_form_card.html" with form=form titulo="Estes dados aparecem no cabeçalho do recibo" %}
+  {% else %}
+    <div class="card"><div class="card-body">{% include "partials/_form_campos.html" with form=form %}</div></div>
+  {% endif %}
+</div></div>
+{% endblock %}

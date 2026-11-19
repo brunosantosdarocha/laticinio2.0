@@ -1,0 +1,14 @@
+{% comment %}
+  Desenha todos os campos de um formulário (erros gerais no topo).
+  Uso: {% include "partials/_form_campos.html" with form=form %}
+{% endcomment %}
+{% if form.non_field_errors %}
+  <div class="alert alert-danger">{% for erro in form.non_field_errors %}<div>{{ erro }}</div>{% endfor %}</div>
+{% endif %}
+<div class="row">
+  {% for campo in form %}
+    <div class="{% if campo.widget_type == 'textarea' or campo.widget_type == 'checkbox' %}col-12{% else %}col-md-6{% endif %}">
+      {% include "partials/_campo.html" with campo=campo %}
+    </div>
+  {% endfor %}
+</div>

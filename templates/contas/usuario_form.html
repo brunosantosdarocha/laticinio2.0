@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% comment %} Criar/editar usuário. {% endcomment %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-person"></i> {{ titulo }}{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'contas:usuarios' %}">Usuários</a></li><li class="breadcrumb-item active">Formulário</li>{% endblock %}
+{% block conteudo %}
+<div class="row"><div class="col-lg-7">
+  {% url 'contas:usuarios' as voltar %}
+  {% include "partials/_form_card.html" with form=form titulo="Dados do usuário" voltar=voltar %}
+  {% if not usuario_editado %}<p class="small text-body-secondary mt-2"><i class="bi bi-info-circle"></i> Uma senha provisória será gerada e mostrada uma única vez. A pessoa só será obrigada a trocá-la se você marcar "Exigir troca de senha".</p>{% endif %}
+</div>
+<div class="col-lg-5">
+  <div class="card"><div class="card-header"><h3 class="card-title">Níveis padrão</h3></div>
+    <ul class="list-group list-group-flush small">
+      <li class="list-group-item"><strong>Gerente:</strong> tudo (menos usuários).</li>
+      <li class="list-group-item"><strong>Escritório:</strong> produtores, calendário, recibos, pagamentos e caixa (sem estornos).</li>
+      <li class="list-group-item"><strong>Coletor:</strong> somente a página de coleta diária.</li>
+    </ul></div>
+</div></div>
+{% endblock %}

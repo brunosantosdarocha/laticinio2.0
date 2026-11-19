@@ -1,0 +1,59 @@
+{% load static %}<!doctype html>
+{% comment %}
+  base.html - layout principal (AdminLTE 4).
+  Todas as telas do sistema "estendem" este arquivo e preenchem os blocos:
+    titulo, titulo_pagina, breadcrumb, conteudo e scripts.
+  Estrutura do AdminLTE: app-wrapper > app-header (barra de cima) + app-sidebar (menu)
+  + app-main (conteúdo) + app-footer (rodapé).
+{% endcomment %}
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>{% block titulo %}Início{% endblock %} | {{ nome_empresa }}</title>
+  <link rel="stylesheet" href="{% static 'vendor/adminlte/adminlte.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/sistema.css' %}">
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+<div class="app-wrapper">
+  {% include "partials/_navbar.html" %}
+  {% include "partials/_sidebar.html" %}
+
+  <main class="app-main">
+    <div class="app-content-header">
+      <div class="container-fluid">
+        <div class="row align-items-center">
+          <div class="col-sm-7"><h3 class="mb-0">{% block titulo_pagina %}{% endblock %}</h3></div>
+          <div class="col-sm-5 d-none d-sm-block">
+            <ol class="breadcrumb float-sm-end mb-0">
+              <li class="breadcrumb-item"><a href="{% url 'core:inicio' %}"><i class="bi bi-house"></i> Início</a></li>
+              {% block breadcrumb %}{% endblock %}
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="app-content">
+      <div class="container-fluid">
+        {% include "partials/_mensagens.html" %}
+        {% block conteudo %}{% endblock %}
+      </div>
+    </div>
+  </main>
+
+  <footer class="app-footer small">
+    <div class="float-end d-none d-sm-inline">Sistema do Laticínio</div>
+    <strong>{{ nome_empresa }}</strong> &middot; desenvolvido por Bruno Rocha
+  </footer>
+</div>
+
+<script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'vendor/adminlte/adminlte.min.js' %}"></script>
+<script src="{% static 'js/sistema.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

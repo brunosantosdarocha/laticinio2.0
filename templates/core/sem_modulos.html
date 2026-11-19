@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% comment %} Usuário logado sem nenhum módulo liberado. {% endcomment %}
+{% block titulo %}Bem-vindo{% endblock %}
+{% block titulo_pagina %}Bem-vindo, {{ user.first_name|default:user.username }}{% endblock %}
+{% block conteudo %}
+<div class="alert alert-info"><i class="bi bi-info-circle me-1"></i>Seu usuário ainda não tem nenhum módulo liberado. Peça ao administrador para definir o seu nível de acesso.</div>
+{% endblock %}

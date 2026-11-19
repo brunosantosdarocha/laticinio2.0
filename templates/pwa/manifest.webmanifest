@@ -1,0 +1,16 @@
+{% load static %}{
+  "name": "Coleta de Leite - {{ nome_empresa|escapejs }}",
+  "short_name": "Coleta",
+  "description": "Lançamento do leite coletado ou entregue, mesmo sem internet.",
+  "start_url": "{% url 'leite:coleta_diaria' %}",
+  "scope": "{% url 'leite:coleta_diaria' %}",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#1d4e9e",
+  "lang": "pt-BR",
+  "icons": [
+    {"src": "{% static 'img/icone-192.png' %}", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "{% static 'img/icone-512.png' %}", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load formatos %}
+{% comment %} Estorno de lançamento do caixa (corrige erro sem apagar o histórico). {% endcomment %}
+{% block titulo %}Estornar lançamento{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-arrow-counterclockwise"></i> Estornar lançamento{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'financeiro:extrato' %}">Financeiro</a></li><li class="breadcrumb-item active">Estornar</li>{% endblock %}
+{% block conteudo %}
+<div class="row"><div class="col-lg-6">
+  <div class="card card-outline card-danger">
+    <div class="card-header"><h3 class="card-title">{{ lancamento.get_tipo_display }} · {{ lancamento.categoria.nome }} · {{ lancamento.valor|moeda }} em {{ lancamento.data|date:"d/m/Y" }}</h3></div>
+    <form method="post" data-confirmar="Confirma o estorno?">
+      {% csrf_token %}
+      <div class="card-body">
+        {% if lancamento.descricao %}<p class="text-body-secondary">{{ lancamento.descricao }}</p>{% endif %}
+        <p>O lançamento continua no histórico, mas deixa de contar nos totais e gráficos.</p>
+        {% include "partials/_form_campos.html" with form=form %}
+      </div>
+      <div class="card-footer d-flex gap-2"><button class="btn btn-danger">Estornar</button><a href="{% url 'financeiro:extrato' %}" class="btn btn-outline-secondary">Voltar</a></div>
+    </form>
+  </div>
+</div></div>
+{% endblock %}

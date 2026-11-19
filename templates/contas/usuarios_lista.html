@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% comment %} Usuários (somente Administrador). {% endcomment %}
+{% block titulo %}Usuários{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-person-gear"></i> Usuários{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Usuários</li>{% endblock %}
+{% block conteudo %}
+<div class="card">
+  <div class="card-header">
+    <form method="get" class="row g-2">
+      <div class="col-md-6"><input type="search" name="q" value="{{ busca }}" maxlength="100" class="form-control" placeholder="Buscar usuário"></div>
+      <div class="col-md-2 d-grid"><button class="btn btn-outline-secondary">Buscar</button></div>
+      <div class="col-md-4 d-grid"><a href="{% url 'contas:usuario_criar' %}" class="btn btn-leite"><i class="bi bi-person-plus"></i> Novo usuário</a></div>
+    </form>
+  </div>
+  <div class="card-body p-0 table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Usuário</th><th>Nome</th><th>Nível</th><th>Situação</th><th>Último acesso</th><th class="text-end">Ações</th></tr></thead>
+      <tbody>
+        {% for u in usuarios %}
+          <tr>
+            <td class="fw-semibold">{{ u.username }}</td>
+            <td>{{ u.first_name|default:"—" }}</td>
+            <td>{% if u.is_superuser %}<span class="badge text-bg-dark">Administrador</span>{% endif %} {% for g in u.groups.all %}<span class="badge text-bg-info">{{ g.name }}</span>{% endfor %}</td>
+            <td>{% if u.is_active %}<span class="badge text-bg-success">Ativo</span>{% else %}<span class="badge text-bg-secondary">Inativo</span>{% endif %}
+              {% if u.perfil.deve_trocar_senha %}<span class="badge text-bg-warning">troca de senha pendente</span>{% endif %}</td>
+            <td class="small">{{ u.last_login|date:"d/m/Y H:i"|default:"nunca" }}</td>
+            <td class="text-end nowrap">
+              <a href="{% url 'contas:usuario_editar' u.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{% url 'contas:usuario_redefinir_senha' u.pk %}" class="d-inline" data-confirmar="Gerar uma nova senha provisória para {{ u.username }}?">{% csrf_token %}<button class="btn btn-sm btn-outline-warning" title="Redefinir senha"><i class="bi bi-key"></i></button></form>
+              <form method="post" action="{% url 'contas:usuario_desbloquear' u.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-outline-success" title="Desbloquear (senhas erradas)"><i class="bi bi-unlock"></i></button></form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

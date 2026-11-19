@@ -1,0 +1,20 @@
+{% comment %}
+  Paginação reaproveitável. Recebe "pagina" (objeto Page de core.utils.paginar).
+  {% querystring %} (Django 5.1+) mantém os filtros da URL e troca só o número da página.
+{% endcomment %}
+{% if pagina.paginator.num_pages > 1 %}
+<nav aria-label="Paginação" class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <small class="text-body-secondary">{{ pagina.start_index }}–{{ pagina.end_index }} de {{ pagina.paginator.count }}</small>
+  <ul class="pagination pagination-sm mb-0">
+    {% if pagina.has_previous %}
+      <li class="page-item"><a class="page-link" href="{% querystring pagina=1 %}">&laquo;</a></li>
+      <li class="page-item"><a class="page-link" href="{% querystring pagina=pagina.previous_page_number %}">Anterior</a></li>
+    {% endif %}
+    <li class="page-item active"><span class="page-link">{{ pagina.number }} / {{ pagina.paginator.num_pages }}</span></li>
+    {% if pagina.has_next %}
+      <li class="page-item"><a class="page-link" href="{% querystring pagina=pagina.next_page_number %}">Próxima</a></li>
+      <li class="page-item"><a class="page-link" href="{% querystring pagina=pagina.paginator.num_pages %}">&raquo;</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}

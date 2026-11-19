@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load formatos %}
+{% comment %}
+  Registrar pagamento ao produtor. Gera automaticamente uma SAÍDA no caixa
+  (categoria "Pagamento a produtores"). No "misto", o Pix é completado pelo sistema.js.
+{% endcomment %}
+{% block titulo %}Pagamento - {{ produtor.nome }}{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-cash-coin"></i> Pagamento a {{ produtor.nome }}{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'leite:produtor_detalhe' produtor.pk %}">{{ produtor.nome }}</a></li><li class="breadcrumb-item active">Pagamento</li>{% endblock %}
+{% block conteudo %}
+<div class="row">
+  <div class="col-lg-8">
+    {% url 'leite:produtor_detalhe' produtor.pk as voltar %}
+    {% include "partials/_form_card.html" with form=form titulo="Dados do pagamento" voltar=voltar botao="Registrar pagamento" %}
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Situação do produtor</h3></div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item d-flex justify-content-between"><span>Valor total do leite</span><strong>{{ saldo.valor|default:0|moeda }}</strong></li>
+        <li class="list-group-item d-flex justify-content-between"><span>Já pago</span><strong>{{ saldo.pago|default:0|moeda }}</strong></li>
+        <li class="list-group-item d-flex justify-content-between"><span>Saldo a pagar</span><strong class="text-warning-emphasis">{{ saldo.saldo|default:0|moeda }}</strong></li>
+        {% if produtor.chave_pix %}<li class="list-group-item"><small class="text-body-secondary d-block">Chave Pix</small>{{ produtor.chave_pix }}</li>{% endif %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base_impressao.html" %}
+{% load formatos %}
+{% comment %} Recibo do produtor para imprimir (mesmo conteúdo do PDF). {% endcomment %}
+{% block titulo %}Recibo - {{ produtor.nome }}{% endblock %}
+{% block conteudo %}
+<div class="text-center mb-3">
+  <h2 class="fw-bold mb-0">{{ empresa.nome|upper }}</h2>
+  <div>Comprovante de Fornecimento de Leite</div>
+  {% if empresa.documento or empresa.cidade %}<small>{{ empresa.documento }}{% if empresa.documento and empresa.cidade %} - {% endif %}{{ empresa.cidade }}</small>{% endif %}
+</div>
+<p class="mb-1"><strong>PRODUTOR:</strong> {{ produtor.nome }}</p>
+<p class="mb-1"><strong>PERÍODO:</strong> {{ inicio|date:"d/m/Y" }} até {{ fim|date:"d/m/Y" }}</p>
+<p><strong>EMISSÃO:</strong> {{ emissao|date:"d/m/Y" }}</p>
+<table class="table table-sm text-center">
+  <thead><tr><th>Data</th><th>Quantidade</th><th>Preço/L</th><th>Total</th><th>Situação</th></tr></thead>
+  <tbody>
+    {% for c in resumo.coletas %}
+      <tr class="{% if c.falta %}linha-falta{% endif %}"><td>{{ c.data|date:"d/m/Y" }}</td><td>{{ c.litros|litros }}</td><td>{{ c.preco_litro|moeda }}</td><td>{{ c.valor_total|moeda }}</td>
+        <td>{% if c.falta %}<strong>FALTA</strong>{% else %}Entregue{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="5">Sem lançamentos no período.</td></tr>{% endfor %}
+  </tbody>
+  <tfoot class="fw-bold"><tr><td>TOTAL</td><td>{{ resumo.total_litros|litros }}</td><td></td><td>{{ resumo.total_valor|moeda }}</td><td></td></tr></tfoot>
+</table>
+{% if resumo.faltas %}<p>Dias com falta no período: {{ resumo.faltas }}</p>{% endif %}
+<p class="text-center mt-5 mb-0">Assinatura do Responsável: ___________________________</p>
+{% if empresa.responsavel %}<p class="text-center">{{ empresa.responsavel }}</p>{% endif %}
+<p class="text-center text-body-secondary small mt-4"><em>Sistema desenvolvido por Bruno Rocha</em></p>
+{% endblock %}

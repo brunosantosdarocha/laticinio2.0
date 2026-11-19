@@ -1,0 +1,22 @@
+{% load static %}<!doctype html>
+{% comment %}
+  Layout de impressão (sem menu). O botão "Imprimir" usa data-imprimir + sistema.js
+  (sem onclick no HTML).
+{% endcomment %}
+<html lang="pt-br" data-bs-theme="light" data-lte-color-mode="off">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Impressão{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'vendor/adminlte/adminlte.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/sistema.css' %}">
+</head>
+<body class="bg-white">
+  <div class="text-center my-3 nao-imprimir">
+    <button type="button" class="btn btn-leite" data-imprimir><i class="bi bi-printer me-1"></i>Imprimir / Salvar em PDF</button>
+  </div>
+  <div class="pagina-impressao">{% block conteudo %}{% endblock %}</div>
+  <script src="{% static 'js/sistema.js' %}"></script>
+</body>
+</html>

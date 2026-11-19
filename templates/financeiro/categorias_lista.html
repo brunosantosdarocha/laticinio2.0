@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% comment %} Categorias de entrada e saída do caixa. {% endcomment %}
+{% block titulo %}Categorias{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-tags"></i> Categorias do caixa{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'financeiro:extrato' %}">Financeiro</a></li><li class="breadcrumb-item active">Categorias</li>{% endblock %}
+{% block conteudo %}
+{% if perms.financeiro.add_categoria %}<a href="{% url 'financeiro:categoria_criar' %}" class="btn btn-leite mb-3"><i class="bi bi-plus-lg"></i> Nova categoria</a>{% endif %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="card card-outline card-success mb-3"><div class="card-header"><h3 class="card-title">Entradas</h3></div>
+      <ul class="list-group list-group-flush">
+        {% for c in entradas %}{% include "financeiro/_categoria_item.html" %}{% empty %}<li class="list-group-item">Nenhuma.</li>{% endfor %}
+      </ul></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card card-outline card-danger mb-3"><div class="card-header"><h3 class="card-title">Saídas</h3></div>
+      <ul class="list-group list-group-flush">
+        {% for c in saidas %}{% include "financeiro/_categoria_item.html" %}{% empty %}<li class="list-group-item">Nenhuma.</li>{% endfor %}
+      </ul></div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load static formatos %}
+{% comment %}
+  Extrato do caixa (antigo "Informações Gerais"): filtros, totais, gráficos por categoria e lista.
+  Lançamentos estornados não entram nos totais; podem ser exibidos marcando "Mostrar estornados".
+{% endcomment %}
+{% block titulo %}Extrato{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-journal-text"></i> Extrato e informações gerais{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Financeiro</li>{% endblock %}
+{% block conteudo %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-6 col-md-2">{% include "partials/_campo.html" with campo=form.inicio %}</div>
+      <div class="col-6 col-md-2">{% include "partials/_campo.html" with campo=form.fim %}</div>
+      <div class="col-6 col-md-2">{% include "partials/_campo.html" with campo=form.tipo %}</div>
+      <div class="col-6 col-md-2">{% include "partials/_campo.html" with campo=form.categoria %}</div>
+      <div class="col-md-2">{% include "partials/_campo.html" with campo=form.q %}</div>
+      <div class="col-md-2 mb-3">
+        {% include "partials/_campo.html" with campo=form.estornados %}
+        <button class="btn btn-leite w-100"><i class="bi bi-funnel"></i> Filtrar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-4"><div class="info-box"><span class="info-box-icon text-bg-success"><i class="bi bi-arrow-down-circle"></i></span><div class="info-box-content"><span class="info-box-text">Entradas</span><span class="info-box-number">{{ totais.entradas|moeda }}</span></div></div></div>
+  <div class="col-md-4"><div class="info-box"><span class="info-box-icon text-bg-danger"><i class="bi bi-arrow-up-circle"></i></span><div class="info-box-content"><span class="info-box-text">Saídas</span><span class="info-box-number">{{ totais.saidas|moeda }}</span></div></div></div>
+  <div class="col-md-4"><div class="info-box"><span class="info-box-icon {% if totais.saldo >= 0 %}text-bg-primary{% else %}text-bg-warning{% endif %}"><i class="bi bi-calculator"></i></span><div class="info-box-content"><span class="info-box-text">Saldo do período</span><span class="info-box-number">{{ totais.saldo|moeda }}</span></div></div></div>
+</div>
+
+<div class="row">
+  <div class="col-lg-6">
+    <div class="card mb-3"><div class="card-header"><h3 class="card-title">Entradas por categoria</h3></div>
+      <div class="card-body">{% if por_entrada %}<div style="height:260px"><canvas data-grafico="barra" data-fonte="dados-entradas" data-moeda="1"></canvas></div>{% else %}<p class="text-body-secondary mb-0">Sem entradas no filtro.</p>{% endif %}</div></div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card mb-3"><div class="card-header"><h3 class="card-title">Saídas por categoria</h3></div>
+      <div class="card-body">{% if por_saida %}<div style="height:260px"><canvas data-grafico="barra" data-fonte="dados-saidas" data-moeda="1"></canvas></div>{% else %}<p class="text-body-secondary mb-0">Sem saídas no filtro.</p>{% endif %}</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap gap-2 align-items-center">
+    <h3 class="card-title me-auto">Lançamentos</h3>
+    {% if perms.financeiro.add_lancamento %}
+      <a href="{% url 'financeiro:lancamento_novo' 'entrada' %}" class="btn btn-sm btn-success"><i class="bi bi-plus"></i> Entrada</a>
+      <a href="{% url 'financeiro:lancamento_novo' 'saida' %}" class="btn btn-sm btn-danger"><i class="bi bi-dash"></i> Saída</a>
+    {% endif %}
+  </div>
+  <div class="card-body p-0 table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th class="text-end">Valor</th><th>Por</th><th></th></tr></thead>
+      <tbody>
+        {% for l in pagina %}
+          <tr class="{% if l.estornado %}linha-estornada{% endif %}">
+            <td class="nowrap">{{ l.data|date:"d/m/Y" }}</td>
+            <td>{% if l.tipo == "ENTRADA" %}<span class="badge text-bg-success">Entrada</span>{% else %}<span class="badge text-bg-danger">Saída</span>{% endif %}</td>
+            <td>{{ l.categoria.nome }}</td>
+            <td class="small">{{ l.descricao|default:"—" }}{% if l.estornado %}<br><em class="text-danger">Estornado: {{ l.motivo_estorno }}</em>{% endif %}</td>
+            <td class="text-end nowrap {% if l.tipo == 'SAIDA' %}text-danger{% else %}text-success{% endif %}">{{ l.valor|moeda }}</td>
+            <td class="small">{{ l.usuario.username|default:"—" }}</td>
+            <td class="text-end">{% if not l.estornado and perms.financeiro.estornar_lancamento %}<a href="{% url 'financeiro:lancamento_estornar' l.pk %}" class="btn btn-sm btn-outline-danger" title="Estornar"><i class="bi bi-arrow-counterclockwise"></i></a>{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-center text-body-secondary py-4">Nenhum lançamento encontrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">{% include "partials/_paginacao.html" %}</div>
+</div>
+{{ grafico_entradas|json_script:"dados-entradas" }}
+{{ grafico_saidas|json_script:"dados-saidas" }}
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/graficos.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% comment %} Criar/editar categoria do caixa. {% endcomment %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-tag"></i> {{ titulo }}{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'financeiro:categorias' %}">Categorias</a></li><li class="breadcrumb-item active">Formulário</li>{% endblock %}
+{% block conteudo %}
+<div class="row"><div class="col-lg-6">
+  {% url 'financeiro:categorias' as voltar %}
+  {% include "partials/_form_card.html" with form=form titulo="Categoria" voltar=voltar %}
+</div></div>
+{% endblock %}

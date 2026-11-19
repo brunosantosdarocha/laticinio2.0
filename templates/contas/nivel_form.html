@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% comment %}
+  Editor de nível: tabela módulos x ações (ver/criar/editar/excluir) + ações especiais.
+  Só as permissões da lista oficial (contas/permissoes.py) são gravadas.
+{% endcomment %}
+{% block titulo %}Nível de acesso{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-shield-lock"></i> {% if grupo %}Nível: {{ grupo.name }}{% else %}Novo nível{% endif %}{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'contas:niveis' %}">Níveis</a></li><li class="breadcrumb-item active">Permissões</li>{% endblock %}
+{% block conteudo %}
+<form method="post">
+  {% csrf_token %}
+  <div class="card card-outline card-success">
+    <div class="card-body">
+      <div class="row"><div class="col-md-6">{% include "partials/_campo.html" with campo=form.name %}</div></div>
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm align-middle text-center">
+          <thead class="table-light"><tr><th class="text-start">Módulo</th>{% for a in acoes %}<th>{{ a }}</th>{% endfor %}<th class="text-start">Especiais</th></tr></thead>
+          <tbody>
+            {% for linha in linhas %}
+              <tr>
+                <td class="text-start fw-semibold">{{ linha.nome }}</td>
+                {% for celula in linha.celulas %}
+                  <td>{% if celula.codigo %}<input class="form-check-input" type="checkbox" name="permissoes" value="{{ celula.codigo }}" {% if celula.marcado %}checked{% endif %} aria-label="{{ linha.nome }}">{% else %}<span class="text-body-tertiary">—</span>{% endif %}</td>
+                {% endfor %}
+                <td class="text-start">
+                  {% for e in linha.especiais %}
+                    <div class="form-check"><input class="form-check-input" type="checkbox" name="permissoes" value="{{ e.codigo }}" id="perm-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" {% if e.marcado %}checked{% endif %}>
+                      <label class="form-check-label" for="perm-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">{{ e.rotulo }}</label></div>
+                  {% endfor %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="small text-body-secondary mb-0">Dica: o nível "Coletor" deve ter só "Lançar leite de hoje" — assim ele vê apenas a página de coleta diária.</p>
+    </div>
+    <div class="card-footer d-flex gap-2"><button class="btn btn-leite"><i class="bi bi-check-lg me-1"></i>Salvar</button><a href="{% url 'contas:niveis' %}" class="btn btn-outline-secondary">Voltar</a></div>
+  </div>
+</form>
+{% endblock %}

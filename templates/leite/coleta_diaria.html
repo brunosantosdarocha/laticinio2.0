@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load static formatos %}
+{% comment %}
+  Página do COLETOR (pensada para o celular) - funciona SEM INTERNET.
+
+  Como funciona:
+  - Sem JavaScript: o formulário é enviado direto ao servidor (data de hoje).
+  - Com JavaScript (normal): coleta-offline.js intercepta o "Lançar leite", guarda o lançamento
+    numa fila no celular e envia assim que houver internet. O service worker (sw.js) guarda
+    esta página para ela abrir mesmo offline, e o manifest permite "Adicionar à tela inicial".
+  Só INSERE: não mostra preço, não edita e não apaga. Correções ficam com o escritório.
+{% endcomment %}
+{% block titulo %}Coleta diária{% endblock %}
+{% block head_extra %}
+  <link rel="manifest" href="{% url 'leite:manifest' %}">
+  <meta name="theme-color" content="#1d4e9e">
+  <link rel="apple-touch-icon" href="{% static 'img/icone-192.png' %}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-droplet-fill text-info"></i> Coleta diária{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Coleta diária</li>{% endblock %}
+
+{% block conteudo %}
+<div class="coleta-card" id="coleta-app"
+     data-usuario="{{ user.username }}"
+     data-sw="{% url 'leite:service_worker' %}"
+     data-login="{% url 'contas:login' %}?next={% url 'leite:coleta_diaria' %}">
+
+  {# Situação da conexão (preenchido pelo JavaScript) #}
+  <div id="status-conexao" class="alert py-2 small d-none" role="status"></div>
+  <div id="aviso-coleta" aria-live="polite"></div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-header coleta-data text-center">
+      <div class="small text-uppercase opacity-75">Lançar leite de hoje</div>
+      <div class="fs-4 fw-bold" id="data-hoje">{{ hoje|date:"l, d/m/Y" }}</div>
+    </div>
+    <form method="post" novalidate autocomplete="off" id="form-coleta">
+      {% csrf_token %}
+      <div class="card-body">
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+
+        <label class="form-label fw-semibold" for="{{ form.produtor.id_for_label }}">1. Produtor</label>
+        {{ form.produtor }}
+        {% for erro in form.produtor.errors %}<div class="invalid-feedback d-block">{{ erro }}</div>{% endfor %}
+
+        <div class="form-label fw-semibold mt-3">2. O leite foi...</div>
+        <div class="btn-group w-100" role="group" aria-label="Coletado ou entregue">
+          {% for opcao in form.forma %}
+            <input type="radio" class="btn-check" name="{{ opcao.data.name }}" id="{{ opcao.id_for_label }}"
+                   value="{{ opcao.data.value }}" {% if opcao.data.selected %}checked{% endif %}>
+            <label class="btn btn-outline-success" for="{{ opcao.id_for_label }}">
+              {% if opcao.data.value == "COLETADO" %}<i class="bi bi-truck me-1"></i>{% else %}<i class="bi bi-house-door me-1"></i>{% endif %}
+              {{ opcao.choice_label }}
+            </label>
+          {% endfor %}
+        </div>
+        {% for erro in form.forma.errors %}<div class="invalid-feedback d-block">{{ erro }}</div>{% endfor %}
+
+        <label class="form-label fw-semibold mt-3" for="{{ form.litros.id_for_label }}">3. Quantidade (litros)</label>
+        {{ form.litros }}
+        {% for erro in form.litros.errors %}<div class="invalid-feedback d-block">{{ erro }}</div>{% endfor %}
+      </div>
+      <div class="card-footer">
+        <button type="submit" class="btn btn-leite w-100 btn-lancar"><i class="bi bi-check2-circle me-2"></i>Lançar leite</button>
+      </div>
+    </form>
+  </div>
+
+  {# Fila do celular: lançamentos guardados esperando internet #}
+  <div class="card card-outline card-warning mb-3 d-none" id="card-fila">
+    <div class="card-header d-flex align-items-center">
+      <h3 class="card-title mb-0"><i class="bi bi-phone me-1"></i>Guardados no celular (<span id="qtd-fila">0</span>)</h3>
+      <button type="button" class="btn btn-sm btn-warning ms-auto" id="btn-enviar"><i class="bi bi-cloud-upload me-1"></i>Enviar agora</button>
+    </div>
+    <ul class="list-group list-group-flush" id="lista-fila"></ul>
+    <div class="card-footer small text-body-secondary">Serão enviados sozinhos quando houver internet. Não limpe os dados do navegador antes disso.</div>
+  </div>
+
+  {# Recusados pelo servidor: o coletor precisa ver e avisar o escritório #}
+  <div class="card card-outline card-danger mb-3 d-none" id="card-recusados">
+    <div class="card-header"><h3 class="card-title mb-0"><i class="bi bi-x-octagon text-danger me-1"></i>Não aceitos pelo escritório</h3></div>
+    <ul class="list-group list-group-flush" id="lista-recusados"></ul>
+  </div>
+
+  <div class="card mb-3 {% if not pendentes %}d-none{% endif %}" id="card-pendentes">
+    <div class="card-header"><h3 class="card-title"><i class="bi bi-hourglass-split text-warning me-1"></i>Falta lançar hoje (<span id="qtd-pendentes">{{ pendentes|length }}</span>)</h3></div>
+    <div class="list-group list-group-flush" id="lista-pendentes">
+      {% for produtor in pendentes %}
+        <button type="button" class="list-group-item list-group-item-action produtor-pendente d-flex justify-content-between align-items-center"
+                data-escolher-produtor="{{ produtor.pk }}">
+          <span>{{ produtor.nome }}{% if produtor.apelido_propriedade %} <small class="text-body-secondary">· {{ produtor.apelido_propriedade }}</small>{% endif %}</span>
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h3 class="card-title mb-0"><i class="bi bi-check2-all text-success me-1"></i>Lançados hoje</h3>
+      <span class="badge text-bg-success fs-6 ms-auto" id="total-hoje">{{ total_hoje|litros }}</span>
+    </div>
+    <ul class="list-group list-group-flush" id="lista-lancados">
+      {% for coleta in coletas %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">{{ coleta.produtor.nome }}</div>
+            <small class="text-body-secondary">
+              {% if coleta.forma == "COLETADO" %}<i class="bi bi-truck"></i> Coletado{% elif coleta.forma == "ENTREGUE" %}<i class="bi bi-house-door"></i> Entregue{% else %}<i class="bi bi-building"></i> Escritório{% endif %}
+              · {{ coleta.criado_em|time:"H:i" }}{% if coleta.usuario %} · {{ coleta.usuario.first_name|default:coleta.usuario.username }}{% endif %}
+            </small>
+          </div>
+          <span class="fs-5 fw-bold {% if coleta.falta %}text-danger{% endif %}">{% if coleta.falta %}Falta{% else %}{{ coleta.litros|litros }}{% endif %}</span>
+        </li>
+      {% empty %}
+        <li class="list-group-item text-body-secondary">Nenhum leite lançado hoje ainda.</li>
+      {% endfor %}
+    </ul>
+    <div class="card-footer small text-body-secondary">
+      <span id="info-atualizado"></span>
+      <i class="bi bi-info-circle"></i> Lançou errado? Avise o escritório para corrigir.
+    </div>
+  </div>
+</div>
+{{ estado_coleta|json_script:"estado-inicial" }}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/coleta-fila.js' %}"></script>
+<script src="{% static 'js/coleta-offline.js' %}"></script>
+{% endblock %}

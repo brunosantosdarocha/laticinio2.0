@@ -1,0 +1,111 @@
+{% comment %}
+  Menu lateral. Cada item só aparece se o usuário tiver a permissão (perms.app.codigo).
+  ATENÇÃO: esconder o item é só visual; a proteção de verdade está nos decoradores das views.
+  "ns" e "nome" identificam a tela atual para destacar o item ativo.
+{% endcomment %}
+{% load static %}
+{% with ns=request.resolver_match.namespace nome=request.resolver_match.url_name %}
+<aside class="app-sidebar sidebar-laticinio shadow" data-bs-theme="dark">
+  <div class="sidebar-brand">
+    <a href="{% url 'core:inicio' %}" class="brand-link d-flex align-items-center">
+      <img src="{% static 'img/logo-laticinio.svg' %}" alt="Balde de leite e queijo" class="logo-laticinio">
+      <span class="brand-text">{{ nome_empresa }}</span>
+    </a>
+  </div>
+  <div class="sidebar-wrapper">
+    <nav class="mt-2">
+      <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="navigation" aria-label="Menu principal" data-accordion="false">
+
+        {% if perms.leite.view_coleta %}
+        <li class="nav-item">
+          <a href="{% url 'core:inicio' %}" class="nav-link {% if ns == 'core' and nome == 'inicio' %}active{% endif %}">
+            <i class="nav-icon bi bi-speedometer2"></i><p>Painel</p>
+          </a>
+        </li>
+        {% endif %}
+
+        {% if perms.leite.registrar_coleta_diaria %}
+        <li class="nav-item">
+          <a href="{% url 'leite:coleta_diaria' %}" class="nav-link {% if nome == 'coleta_diaria' %}active{% endif %}">
+            <i class="nav-icon bi bi-droplet-fill text-info"></i><p>Coleta diária</p>
+          </a>
+        </li>
+        {% endif %}
+
+        {% if perms.leite.view_coleta or perms.leite.view_produtor or perms.leite.emitir_recibo or perms.leite.view_pagamentoprodutor %}
+        <li class="nav-header">LEITE</li>
+        {% endif %}
+        {% if perms.leite.view_coleta %}
+        <li class="nav-item">
+          <a href="{% url 'leite:calendario' %}" class="nav-link {% if nome == 'calendario' or nome == 'coleta_editar' %}active{% endif %}">
+            <i class="nav-icon bi bi-calendar3"></i><p>Calendário do leite</p>
+          </a>
+        </li>
+        {% endif %}
+        {% if perms.leite.view_produtor %}
+        <li class="nav-item">
+          <a href="{% url 'leite:produtores' %}" class="nav-link {% if 'produtor' in nome %}active{% endif %}">
+            <i class="nav-icon bi bi-people"></i><p>Produtores</p>
+          </a>
+        </li>
+        {% endif %}
+        {% if perms.leite.emitir_recibo %}
+        <li class="nav-item">
+          <a href="{% url 'leite:recibo' %}" class="nav-link {% if 'recibo' in nome %}active{% endif %}">
+            <i class="nav-icon bi bi-receipt"></i><p>Emitir recibo</p>
+          </a>
+        </li>
+        {% endif %}
+        {% if perms.leite.view_pagamentoprodutor %}
+        <li class="nav-item">
+          <a href="{% url 'leite:saldos' %}" class="nav-link {% if nome == 'saldos' %}active{% endif %}">
+            <i class="nav-icon bi bi-cash-coin"></i><p>Saldos a pagar</p>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{% url 'leite:pagamentos' %}" class="nav-link {% if 'pagamento' in nome %}active{% endif %}">
+            <i class="nav-icon bi bi-wallet2"></i><p>Pagamentos</p>
+          </a>
+        </li>
+        {% endif %}
+
+        {% if perms.financeiro.view_lancamento or perms.financeiro.add_lancamento %}
+        <li class="nav-header">CAIXA</li>
+        <li class="nav-item {% if ns == 'financeiro' %}menu-open{% endif %}">
+          <a href="#" class="nav-link {% if ns == 'financeiro' %}active{% endif %}">
+            <i class="nav-icon bi bi-bank"></i>
+            <p>Financeiro <i class="nav-arrow bi bi-chevron-right"></i></p>
+          </a>
+          <ul class="nav nav-treeview">
+            {% if perms.financeiro.add_lancamento %}
+            <li class="nav-item"><a href="{% url 'financeiro:lancamento_novo' 'entrada' %}" class="nav-link {% if request.path == '/financeiro/novo/entrada/' %}active{% endif %}"><i class="nav-icon bi bi-plus-circle text-success"></i><p>Nova entrada</p></a></li>
+            <li class="nav-item"><a href="{% url 'financeiro:lancamento_novo' 'saida' %}" class="nav-link {% if request.path == '/financeiro/novo/saida/' %}active{% endif %}"><i class="nav-icon bi bi-dash-circle text-danger"></i><p>Nova saída</p></a></li>
+            {% endif %}
+            {% if perms.financeiro.view_lancamento %}
+            <li class="nav-item"><a href="{% url 'financeiro:extrato' %}" class="nav-link {% if nome == 'extrato' or nome == 'lancamento_estornar' %}active{% endif %}"><i class="nav-icon bi bi-journal-text"></i><p>Extrato e gráficos</p></a></li>
+            {% endif %}
+            {% if perms.financeiro.view_categoria %}
+            <li class="nav-item"><a href="{% url 'financeiro:categorias' %}" class="nav-link {% if 'categoria' in nome %}active{% endif %}"><i class="nav-icon bi bi-tags"></i><p>Categorias</p></a></li>
+            {% endif %}
+          </ul>
+        </li>
+        {% endif %}
+
+        {% if perms.core.view_dadosempresa or perms.backup.gerenciar_backup or user.is_superuser %}
+        <li class="nav-header">SISTEMA</li>
+        {% endif %}
+        {% if perms.core.view_dadosempresa %}
+        <li class="nav-item"><a href="{% url 'core:empresa' %}" class="nav-link {% if nome == 'empresa' %}active{% endif %}"><i class="nav-icon bi bi-building"></i><p>Dados do laticínio</p></a></li>
+        {% endif %}
+        {% if perms.backup.gerenciar_backup %}
+        <li class="nav-item"><a href="{% url 'backup:painel' %}" class="nav-link {% if ns == 'backup' %}active{% endif %}"><i class="nav-icon bi bi-cloud-arrow-up"></i><p>Backup</p></a></li>
+        {% endif %}
+        {% if user.is_superuser %}
+        <li class="nav-item"><a href="{% url 'contas:usuarios' %}" class="nav-link {% if 'usuario' in nome %}active{% endif %}"><i class="nav-icon bi bi-person-gear"></i><p>Usuários</p></a></li>
+        <li class="nav-item"><a href="{% url 'contas:niveis' %}" class="nav-link {% if 'nive' in nome %}active{% endif %}"><i class="nav-icon bi bi-shield-lock"></i><p>Níveis de acesso</p></a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+</aside>
+{% endwith %}

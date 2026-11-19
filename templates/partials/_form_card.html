@@ -1,0 +1,17 @@
+{% comment %}
+  Card completo com formulário: título, campos, botão Salvar e Voltar.
+  Uso: {% include "partials/_form_card.html" with form=form titulo="Novo produtor" voltar=url_voltar botao="Salvar" %}
+{% endcomment %}
+<div class="card card-outline card-success">
+  <div class="card-header"><h3 class="card-title">{{ titulo }}</h3></div>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="card-body">
+      {% include "partials/_form_campos.html" with form=form %}
+    </div>
+    <div class="card-footer d-flex gap-2">
+      <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i>{{ botao|default:"Salvar" }}</button>
+      {% if voltar %}<a href="{{ voltar }}" class="btn btn-outline-secondary">Voltar</a>{% endif %}
+    </div>
+  </form>
+</div>

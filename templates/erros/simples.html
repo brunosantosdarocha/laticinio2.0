@@ -1,0 +1,21 @@
+{% load static %}<!doctype html>
+{% comment %}
+  Página de erro SEM menu: usada para quem não está logado e para o erro 500
+  (que não pode depender do banco de dados).
+{% endcomment %}
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Erro {{ codigo }}</title>
+  <link rel="stylesheet" href="{% static 'vendor/adminlte/adminlte.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/sistema.css' %}">
+</head>
+<body class="login-page-laticinio d-flex align-items-center justify-content-center">
+  <div class="card shadow text-center p-4" style="max-width: 420px">
+    <h1 class="display-3 fw-bold">{{ codigo }}</h1>
+    <h4>{{ titulo }}</h4>
+    <p class="text-body-secondary">{{ mensagem }}</p>
+    <a href="/" class="btn btn-leite">Ir para o início</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load static formatos %}
+{% comment %}
+  Dashboard (painel). Os blocos de dinheiro só aparecem para quem tem permissão.
+  Os gráficos recebem os dados via json_script e são desenhados pelo js/graficos.js.
+{% endcomment %}
+{% block titulo %}Painel{% endblock %}
+{% block titulo_pagina %}Painel do laticínio <small class="text-body-secondary fs-6">{{ hoje|date:"l, d \d\e F \d\e Y" }}</small>{% endblock %}
+
+{% block conteudo %}
+<div class="row">
+  <div class="col-lg-3 col-6">
+    <div class="small-box text-bg-primary">
+      <div class="inner"><h3>{{ litros_hoje|litros }}</h3><p>Leite recebido hoje</p></div>
+      <i class="small-box-icon bi bi-droplet-fill"></i>
+      <a href="{% url 'leite:coleta_diaria' %}" class="small-box-footer link-light link-underline-opacity-0">Coleta diária <i class="bi bi-arrow-right-circle"></i></a>
+    </div>
+  </div>
+  <div class="col-lg-3 col-6">
+    <div class="small-box text-bg-success">
+      <div class="inner"><h3>{{ litros_mes|litros }}</h3>
+        <p>Leite no mês {% if variacao_mes is not None %}<span class="badge {% if variacao_mes >= 0 %}bg-light text-success{% else %}bg-light text-danger{% endif %}">{% if variacao_mes >= 0 %}+{% endif %}{{ variacao_mes|numero_br:1 }}%</span>{% endif %}</p></div>
+      <i class="small-box-icon bi bi-bar-chart-fill"></i>
+      <a href="{% url 'leite:calendario' %}" class="small-box-footer link-light link-underline-opacity-0">Calendário <i class="bi bi-arrow-right-circle"></i></a>
+    </div>
+  </div>
+  <div class="col-lg-3 col-6">
+    <div class="small-box text-bg-warning">
+      <div class="inner"><h3>{{ pendentes_hoje }}</h3><p>Produtores sem lançamento hoje</p></div>
+      <i class="small-box-icon bi bi-hourglass-split"></i>
+      <a href="{% url 'leite:coleta_diaria' %}" class="small-box-footer link-dark link-underline-opacity-0">Ver pendentes <i class="bi bi-arrow-right-circle"></i></a>
+    </div>
+  </div>
+  <div class="col-lg-3 col-6">
+    {% if saldo_a_pagar is not None %}
+    <div class="small-box text-bg-danger">
+      <div class="inner"><h3>{{ saldo_a_pagar|moeda }}</h3><p>Saldo a pagar aos produtores</p></div>
+      <i class="small-box-icon bi bi-wallet2"></i>
+      <a href="{% url 'leite:saldos' %}" class="small-box-footer link-light link-underline-opacity-0">Saldos <i class="bi bi-arrow-right-circle"></i></a>
+    </div>
+    {% else %}
+    <div class="small-box text-bg-danger">
+      <div class="inner"><h3>{{ produtores_ativos }}</h3><p>Produtores ativos</p></div>
+      <i class="small-box-icon bi bi-people-fill"></i>
+      <a href="{% url 'leite:produtores' %}" class="small-box-footer link-light link-underline-opacity-0">Produtores <i class="bi bi-arrow-right-circle"></i></a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if financeiro_mes %}
+<div class="row">
+  <div class="col-md-4"><div class="info-box"><span class="info-box-icon text-bg-success shadow-sm"><i class="bi bi-arrow-down-circle"></i></span><div class="info-box-content"><span class="info-box-text">Entradas do mês</span><span class="info-box-number">{{ financeiro_mes.entradas|moeda }}</span></div></div></div>
+  <div class="col-md-4"><div class="info-box"><span class="info-box-icon text-bg-danger shadow-sm"><i class="bi bi-arrow-up-circle"></i></span><div class="info-box-content"><span class="info-box-text">Saídas do mês</span><span class="info-box-number">{{ financeiro_mes.saidas|moeda }}</span></div></div></div>
+  <div class="col-md-4"><div class="info-box"><span class="info-box-icon text-bg-primary shadow-sm"><i class="bi bi-calculator"></i></span><div class="info-box-content"><span class="info-box-text">Saldo do mês</span><span class="info-box-number">{{ financeiro_mes.saldo|moeda }}</span></div></div></div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="col-lg-7">
+    <div class="card mb-3">
+      <div class="card-header"><h3 class="card-title"><i class="bi bi-graph-up me-1"></i>Leite recebido - últimos 6 meses</h3></div>
+      <div class="card-body"><div style="height: 280px"><canvas data-grafico="area" data-fonte="dados-litros"></canvas></div></div>
+    </div>
+    {% if grafico_caixa %}
+    <div class="card mb-3">
+      <div class="card-header"><h3 class="card-title"><i class="bi bi-bank me-1"></i>Caixa - entradas x saídas</h3></div>
+      <div class="card-body"><div style="height: 260px"><canvas data-grafico="barra" data-fonte="dados-caixa" data-moeda="1"></canvas></div></div>
+    </div>
+    {% endif %}
+  </div>
+  <div class="col-lg-5">
+    <div class="card text-bg-primary mb-3">
+      <div class="card-header border-0"><h3 class="card-title"><i class="bi bi-pie-chart me-1"></i>Leite do mês por produtor</h3></div>
+      <div class="card-body bg-body text-body rounded-bottom">
+        {% if grafico_rosca.rotulos %}<div style="height: 280px"><canvas data-grafico="rosca" data-fonte="dados-rosca"></canvas></div>
+        {% else %}<p class="text-body-secondary mb-0">Sem leite lançado neste mês.</p>{% endif %}
+      </div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header"><h3 class="card-title"><i class="bi bi-exclamation-triangle text-warning me-1"></i>Alertas</h3></div>
+      <ul class="list-group list-group-flush">
+        {% if pendentes_hoje %}<li class="list-group-item"><i class="bi bi-droplet text-warning me-1"></i>{{ pendentes_hoje }} produtor(es) ainda sem leite hoje</li>{% endif %}
+        {% for p in faltas_mes %}<li class="list-group-item"><i class="bi bi-calendar-x text-danger me-1"></i><a href="{% url 'leite:calendario' %}?produtor={{ p.pk }}">{{ p.nome }}</a>: {{ p.qtd }} falta{{ p.qtd|pluralize }} no mês</li>{% endfor %}
+        {% for l in maiores_saldos %}<li class="list-group-item"><i class="bi bi-cash-coin text-primary me-1"></i><a href="{% url 'leite:produtor_detalhe' l.produtor.pk %}">{{ l.produtor.nome }}</a> tem {{ l.saldo|moeda }} a receber</li>{% endfor %}
+        {% if not pendentes_hoje and not faltas_mes and not maiores_saldos %}<li class="list-group-item text-body-secondary"><i class="bi bi-check2-circle text-success me-1"></i>Nenhum alerta.</li>{% endif %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3 class="card-title"><i class="bi bi-clock-history me-1"></i>Últimos lançamentos de leite</h3></div>
+  <div class="card-body p-0 table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead><tr><th>Data</th><th>Produtor</th><th class="text-end">Litros</th><th>Forma</th><th>Lançado por</th><th>Quando</th></tr></thead>
+      <tbody>
+        {% for c in ultimas_coletas %}
+          <tr class="{% if c.falta %}linha-falta{% endif %}"><td>{{ c.data|date:"d/m/Y" }}</td><td>{{ c.produtor.nome }}</td>
+            <td class="text-end">{% if c.falta %}Falta{% else %}{{ c.litros|litros }}{% endif %}</td><td class="small">{{ c.get_forma_display }}</td>
+            <td class="small">{{ c.usuario.username|default:"—" }}</td><td class="small">{{ c.criado_em|date:"d/m H:i" }}</td></tr>
+        {% empty %}<tr><td colspan="6" class="text-center text-body-secondary py-3">Nenhum lançamento ainda.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{{ grafico_litros|json_script:"dados-litros" }}
+{{ grafico_rosca|json_script:"dados-rosca" }}
+{% if grafico_caixa %}{{ grafico_caixa|json_script:"dados-caixa" }}{% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/graficos.js' %}"></script>
+{% endblock %}

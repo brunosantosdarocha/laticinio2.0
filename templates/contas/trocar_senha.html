@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% comment %} Troca de senha (obrigatória no primeiro acesso ou após redefinição). {% endcomment %}
+{% block titulo %}Alterar senha{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-key"></i> Alterar senha{% endblock %}
+{% block conteudo %}
+<div class="row"><div class="col-lg-6">
+  {% if obrigatoria %}<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-1"></i>Por segurança, troque a senha provisória antes de continuar.</div>{% endif %}
+  <div class="card card-outline card-success">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="card-body">
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+        {% for campo in form %}{% include "partials/_campo.html" with campo=campo %}{% endfor %}
+      </div>
+      <div class="card-footer"><button class="btn btn-leite"><i class="bi bi-check-lg me-1"></i>Salvar nova senha</button></div>
+    </form>
+  </div>
+</div></div>
+{% endblock %}
