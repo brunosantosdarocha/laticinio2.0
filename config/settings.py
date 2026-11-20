@@ -38,14 +38,19 @@ def env_lista(nome, padrao=""):
     return [item.strip() for item in os.getenv(nome, padrao).split(",") if item.strip()]
 
 
+# O Vercel define a variável VERCEL=1. Lá não existe o arquivo .env (as variáveis
+# são cadastradas no painel do Vercel) e o disco é somente leitura, exceto /tmp.
+NA_VERCEL = bool(os.getenv("VERCEL"))
+
+
 # ------------------------------------------------------------------------------
 # Segurança básica
 # ------------------------------------------------------------------------------
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise ImproperlyConfigured(
-        "A variável SECRET_KEY não foi encontrada no arquivo .env. "
-        "Rode 'python iniciar.py' para criar o .env automaticamente."
+        "A variável SECRET_KEY não foi encontrada. No computador, rode 'python iniciar.py' "
+        "para criar o .env. No Vercel, cadastre SECRET_KEY em Settings > Environment Variables."
     )
 
 # DEBUG começa DESLIGADO. Só ligue no .env enquanto estiver programando.
@@ -55,6 +60,13 @@ ALLOWED_HOSTS = env_lista("ALLOWED_HOSTS", "127.0.0.1,localhost")
 
 # Endereços confiáveis para formulários quando usar domínio próprio (ex.: https://leite.meusite.com).
 CSRF_TRUSTED_ORIGINS = env_lista("CSRF_TRUSTED_ORIGINS", "")
+
+if NA_VERCEL:
+    # Libera os endereços *.vercel.app que o Vercel cria para o projeto.
+    ALLOWED_HOSTS.append(".vercel.app")
+    for variavel in ("VERCEL_URL", "VERCEL_BRANCH_URL", "VERCEL_PROJECT_PRODUCTION_URL"):
+        if os.getenv(variavel):
+            CSRF_TRUSTED_ORIGINS.append("https://" + os.getenv(variavel))
 
 # Endereço do painel /admin do Django. Mudamos o padrão para dificultar ataques automáticos.
 ADMIN_URL = os.getenv("ADMIN_URL", "gestao-interna/").strip("/") + "/"
@@ -133,6 +145,15 @@ DATABASES = {
     }
 }
 
+# Se DATABASE_URL existir (ex.: PostgreSQL do Neon/Vercel), ele substitui o SQLite.
+# No Vercel isso é OBRIGATÓRIO: o disco de lá é somente leitura e os dados se perdem.
+if os.getenv("DATABASE_URL"):
+    import dj_database_url
+
+    DATABASES["default"] = dj_database_url.parse(
+        os.environ["DATABASE_URL"], conn_max_age=60, conn_health_checks=True, ssl_require=NA_VERCEL
+    )
+
 # ------------------------------------------------------------------------------
 # Login e senhas
 # ------------------------------------------------------------------------------
@@ -206,6 +227,8 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
+# No Vercel, o WhiteNoise serve direto da pasta "static" (não depende do collectstatic).
+WHITENOISE_USE_FINDERS = NA_VERCEL
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -220,7 +243,8 @@ COLETOR_SESSAO_DIAS = int(os.getenv("COLETOR_SESSAO_DIAS", "30"))
 COLETA_OFFLINE_MAX_ITENS = 200
 
 # Pasta onde os backups .zip são guardados.
-PASTA_BACKUPS = BASE_DIR / "backups"
+PASTA_TEMPORARIA = Path("/tmp") if NA_VERCEL else BASE_DIR
+PASTA_BACKUPS = PASTA_TEMPORARIA / "backups"
 BACKUPS_MANTIDOS = 10
 
 # E-mail: as credenciais SMTP são configuradas pela tela de Backup (ficam criptografadas no banco).
@@ -230,8 +254,8 @@ EMAIL_TIMEOUT = 20
 # ------------------------------------------------------------------------------
 # Logs de segurança (logs/seguranca.log, com rotação automática)
 # ------------------------------------------------------------------------------
-PASTA_LOGS = BASE_DIR / "logs"
-PASTA_LOGS.mkdir(exist_ok=True)
+PASTA_LOGS = PASTA_TEMPORARIA / "logs"
+PASTA_LOGS.mkdir(parents=True, exist_ok=True)
 
 LOGGING = {
     "version": 1,
