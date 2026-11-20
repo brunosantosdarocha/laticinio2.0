@@ -154,6 +154,23 @@ Se o Windows perguntar sobre o Firewall, permita o acesso em **redes privadas**.
 
 No `.env`: `ALLOWED_HOSTS=seu.dominio.com.br`, `CSRF_TRUSTED_ORIGINS=https://seu.dominio.com.br`, `USAR_HTTPS=True`. Rode o `manage.py servidor --sem-navegador` atrás do Nginx com certificado (Let's Encrypt). Confira com `manage.py check --deploy` (deve dar *no issues*). Para muitos acessos simultâneos, troque o SQLite por **PostgreSQL** (`pip install psycopg` e ajuste `DATABASES` no `settings.py`).
 
+### Na internet (PythonAnywhere)
+
+1. Crie a conta em pythonanywhere.com. Em **Consoles → Bash**, baixe o código e rode o instalador:
+   ```bash
+   git clone https://github.com/SEU-USUARIO-GITHUB/laticinio2.0.git ~/laticinio2.0
+   cd ~/laticinio2.0 && bash deploy/pythonanywhere_instalar.sh
+   ```
+   O instalador cria o `.env` com uma chave secreta própria e mostra a **senha do admin uma única vez**. Anote essa senha.
+2. Na aba **Web**: *Add a new web app* → *Manual configuration* (não escolha "Django") → a versão de Python que o instalador mostrou no final.
+3. Ainda na aba **Web**, preencha o que o instalador mostrou: *Source code*, *Working directory*, *Virtualenv*, *Static files* (`/static/` → `.../staticfiles`) e ligue o **Force HTTPS**.
+4. Abra o **WSGI configuration file**, apague tudo e cole o conteúdo de `deploy/pythonanywhere_wsgi.py`, trocando `SEUUSUARIO` pelo seu usuário. Clique em **Reload**.
+5. **Backup automático:** o PythonAnywhere não mantém o agendador ligado. Na aba **Tasks**, crie uma tarefa diária com:
+   `/home/SEUUSUARIO/laticinio2.0/.venv/bin/python /home/SEUUSUARIO/laticinio2.0/manage.py backup_agora --enviar`
+
+**Atualizar depois:** `cd ~/laticinio2.0 && git pull && bash deploy/pythonanywhere_instalar.sh` (já recarrega o site).
+**Erros:** veja o *Error log* na aba **Web**.
+
 ---
 
 ## 7. Testes automatizados
